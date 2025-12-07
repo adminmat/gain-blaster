@@ -1,0 +1,1972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#ff6b35">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Gain Blaster">
+    <meta name="description" content="Antenna bearing calculator and radiation pattern simulator for ham radio">
+    <link rel="manifest" href="manifest.json">
+    <title>Gain Blaster - Antenna Calculator</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: white;
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0;
+            background: white;
+            overflow: hidden;
+            transition: opacity 0.3s;
+        }
+
+        .container.dimmed {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-image {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 60px;
+            width: auto;
+            z-index: 10;
+        }
+
+        .header-text {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-left: 140px;
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 900;
+            margin: 0;
+            letter-spacing: 2px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            margin: 5px 0 0 0;
+            opacity: 0.9;
+        }
+
+        .header p {
+            font-size: 12px;
+            margin: 5px 0 0 0;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 20px 0;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            padding: 0 20px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .input-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-field label {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .input-field input {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-field input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .btn-secondary:hover {
+            background: #d5dbdd;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .map-container {
+            background: #f8f9fa;
+            padding: 2mm 0;
+            min-height: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            position: relative;
+            overflow: visible;
+            width: 100vw;
+        }
+
+        .map-toggle-icon {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 44px;
+            height: 44px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .map-toggle-icon:hover {
+            transform: scale(1.1);
+            background: rgba(0, 0, 0, 0.85);
+        }
+
+        .map-toggle-icon.satellite-mode {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+
+        .map-toggle-icon.satellite-mode:hover {
+            background: rgba(255, 255, 255, 1);
+        }
+
+        .range-toggle-icon {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            width: 44px;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            padding: 4px;
+        }
+
+        .range-toggle-icon:hover {
+            transform: scale(1.05);
+            background: rgba(0, 0, 0, 0.85);
+        }
+
+        .range-icon {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .range-label {
+            font-size: 9px;
+            color: white;
+            font-weight: 600;
+            margin-top: 2px;
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        .radiation-sim-toggle {
+            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px 20px 0 20px;
+            transition: all 0.3s;
+            display: block;
+            width: calc(100% - 40px);
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .radiation-sim-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+        }
+
+        .radiation-sim-controls {
+            display: none;
+            background: #f8f9fa;
+            padding: 15px 20px;
+            margin: 10px 20px;
+            border-radius: 8px;
+            border: 2px solid #ff6b35;
+        }
+
+        .radiation-sim-controls.active {
+            display: block;
+        }
+
+        .sim-field {
+            margin-bottom: 12px;
+        }
+
+        .sim-field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .sim-field select,
+        .sim-field input {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .sim-field select:focus,
+        .sim-field input:focus {
+            outline: none;
+            border-color: #ff6b35;
+        }
+
+        .blast-button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .blast-button.off {
+            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+            color: white;
+        }
+
+        .blast-button.off:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 20px rgba(255, 107, 53, 0.5);
+        }
+
+        .blast-button.on {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+
+        @keyframes ripple {
+            0% {
+                r: 0;
+                opacity: 0.8;
+            }
+            100% {
+                r: attr(data-max-radius);
+                opacity: 0;
+            }
+        }
+
+        @keyframes pulseWave {
+            0% {
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.6;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+
+        #worldMapContainer {
+            width: 100vw;
+        }
+
+        #satelliteMapContainer {
+            width: 100vw;
+            padding: 0;
+        }
+
+        #map {
+            width: 100%;
+            display: block;
+            background: #f8f9fa;
+        }
+
+        #satelliteMap {
+            width: 100vw;
+            height: 100vw;
+        }
+        
+        #targetMap {
+            width: 100%;
+            height: 600px;
+        }
+
+        .results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #e0e0e0;
+        }
+
+        .result-card.highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .result-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+
+        .result-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .result-unit {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .info-message {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Target Map Modal */
+        .target-map-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+        }
+
+        .target-map-modal.active {
+            display: flex;
+        }
+
+        .target-map-header {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .target-map-header h2 {
+            font-size: 18px;
+            margin: 0;
+        }
+
+        .target-map-content {
+            flex: 1;
+            position: relative;
+        }
+
+        .target-map-info {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px 20px;
+            border-radius: 6px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            font-size: 13px;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        /* Disclaimer Modal */
+        .disclaimer-modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            animation: fadeIn 0.3s;
+        }
+
+        .disclaimer-modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .disclaimer-content {
+            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            margin: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s;
+            font-family: 'Comic Sans MS', 'Comic Sans', sans-serif;
+        }
+
+        .disclaimer-content h2 {
+            font-family: 'Comic Sans MS', 'Comic Sans', sans-serif;
+            color: white;
+            margin: 0 0 15px 0;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .disclaimer-content p {
+            font-family: 'Comic Sans MS', 'Comic Sans', sans-serif;
+            color: white;
+            line-height: 1.6;
+            margin: 15px 0;
+            font-size: 18px;
+        }
+
+        .disclaimer-quote {
+            font-style: italic;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid white;
+            font-size: 17px;
+        }
+
+        .disclaimer-button {
+            background: white;
+            color: #ff6b35;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            font-family: 'Comic Sans MS', 'Comic Sans', sans-serif;
+            transition: transform 0.2s;
+        }
+
+        .disclaimer-button:hover {
+            transform: scale(1.05);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { 
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to { 
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 0;
+            }
+            
+            .content {
+                padding: 15px 0;
+            }
+            
+            .input-group {
+                grid-template-columns: 1fr;
+            }
+
+            button {
+                min-width: 100%;
+            }
+
+            .target-map-header h2 {
+                font-size: 16px;
+            }
+            
+            .header-image {
+                height: 50px;
+                left: 10px;
+            }
+            
+            .header h1 {
+                font-family: 'Orbitron', sans-serif;
+                font-size: 22px;
+                font-weight: 900;
+                letter-spacing: 1px;
+            }
+            
+            .header-text {
+                padding-left: 70px;
+            }
+            
+            .header .subtitle {
+                font-size: 12px;
+            }
+            
+            .radiation-sim-toggle {
+                min-width: 0;
+                width: calc(100% - 40px);
+            }
+            
+            .disclaimer-content {
+                margin: 10px;
+                padding: 20px;
+                max-width: 90%;
+            }
+            
+            .disclaimer-content h2 {
+                font-size: 24px;
+            }
+            
+            .disclaimer-content p {
+                font-size: 16px;
+            }
+            
+            .disclaimer-button {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Disclaimer Modal -->
+    <div class="disclaimer-modal" id="disclaimerModal">
+        <div class="disclaimer-content">
+            <h2>🍕 Hang on there a second... 🍕</h2>
+            <p class="disclaimer-quote">
+                "well Matt, this isn't how antenna radiation works... You aren't considering ground losses and reflection, near field far field, takeoff angle, ionospheric conditions, lobe patterns from an Isotropic Radiator modeled in MMANA-GAL or 4nec2....Bla bla bla..."
+            </p>
+            <p>
+                Ok, I get it. This is just a stupid visual guide that shoots reverse pizza slices for funzees. If you can accept that click "I understand"
+            </p>
+            <button class="disclaimer-button" onclick="acceptDisclaimer()">I understand</button>
+        </div>
+    </div>
+
+    <div class="container" id="mainContainer">
+        <div class="header">
+            <img src="data:image/png;base64,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" class="header-image" alt="Gain Blaster">
+            <div class="header-text">
+                <h1>GAIN BLASTER</h1>
+                <div class="subtitle">a field guide</div>
+                <p>by KE2FIL</p>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Location Input Section -->
+            <div class="section">
+                <div class="section-title">Your QTH Location <span style="font-weight: 400; font-size: 14px; color: #666;">— Latitude, Longitude</span></div>
+                <div class="input-group">
+                    <div class="input-field">
+                        <input type="text" id="latLon" placeholder="Ex: 40.7128, -74.0060">
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="setQTHLocation()">📍 Set QTH Location</button>
+                </div>
+                <div id="qthDetails" class="info-message hidden" style="margin-top: 10px;"></div>
+            </div>
+
+            <!-- Map Section -->
+            <div class="section" style="margin-bottom: 20px; padding: 0;">
+                <div id="worldMapContainer" class="map-container">
+                    <div class="map-toggle-icon" id="mapToggleIcon" onclick="toggleMapView()">🛰️</div>
+                    <div class="range-toggle-icon" id="rangeToggleIcon" onclick="cycleRange()">
+                        <div class="range-icon">🔍</div>
+                        <div class="range-label" id="rangeLabel">DX</div>
+                    </div>
+                    <svg id="map"></svg>
+                </div>
+                <div id="satelliteMapContainer" class="map-container hidden">
+                    <div class="map-toggle-icon satellite-mode" id="mapToggleIcon2" onclick="toggleMapView()">🌍</div>
+                    <div id="satelliteMap"></div>
+                </div>
+                
+                <!-- Radiation Sim Section -->
+                <div id="radiationSimSection" style="display: none;">
+                    <button class="radiation-sim-toggle" onclick="toggleRadiationSimControls()">
+                        radiation pattern sim 🍕
+                    </button>
+                    <div id="radiationSimControls" class="radiation-sim-controls">
+                        <div class="sim-field">
+                            <label for="antennaPreset">Antenna Type</label>
+                            <select id="antennaPreset" onchange="updateAntennaPreset()">
+                                <option value="yagi3">Yagi 3-element</option>
+                                <option value="dipole">Dipole</option>
+                                <option value="magloop">Magnetic Loop</option>
+                                <option value="yagi5">Yagi 5-element</option>
+                                <option value="yagi7">Yagi 7-element</option>
+                                <option value="logperiodic">Log-Periodic</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+                        <div class="sim-field">
+                            <label for="beamwidth">Beamwidth (degrees)</label>
+                            <input type="number" id="beamwidth" value="60" min="10" max="180">
+                        </div>
+                        <div class="sim-field">
+                            <label for="antennaGain">Antenna Gain (dBi)</label>
+                            <input type="number" id="antennaGain" value="9" min="0" max="20" step="0.5">
+                        </div>
+                        <div class="sim-field">
+                            <label for="maxRange">Max Range</label>
+                            <select id="maxRange">
+                                <option value="auto">Auto (to target)</option>
+                                <option value="map">Full Map</option>
+                            </select>
+                        </div>
+                        <button id="blastButton" class="blast-button off" onclick="toggleGainBlast()">
+                            🔥 Blast the Gain!
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Target Entry Section -->
+            <div class="section" id="targetSection" style="display: none;">
+                <div class="section-title">Target Location</div>
+                <div class="input-group">
+                    <div class="input-field">
+                        <label for="targetLatLon">Target Lat, Lon</label>
+                        <input type="text" id="targetLatLon" placeholder="Ex: 51.5074, -0.1278">
+                    </div>
+                    <div class="input-field">
+                        <label for="targetGrid">Target Grid Square</label>
+                        <input type="text" id="targetGrid" placeholder="Ex: IO91wm">
+                    </div>
+                    <div class="input-field">
+                        <label for="targetCity">City, Country</label>
+                        <input type="text" id="targetCity" placeholder="Ex: London, UK">
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="setTargetLocation()">Set Target</button>
+                    <button class="btn-success" onclick="openTargetMapModal()">🗺️ Set Target with Map</button>
+                </div>
+                <div id="targetDetails" class="info-message hidden" style="margin-top: 10px;"></div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="section">
+                <div class="section-title">Bearing Information</div>
+                <div id="results" class="results hidden">
+                    <div class="result-card">
+                        <div class="result-label">True Azimuth</div>
+                        <div class="result-value" id="trueAzimuth">---</div>
+                        <div class="result-unit">degrees</div>
+                    </div>
+                    <div class="result-card highlight">
+                        <div class="result-label">Magnetic Bearing</div>
+                        <div class="result-value" id="magneticBearing">---</div>
+                        <div class="result-unit">degrees (for compass)</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-label">Declination</div>
+                        <div class="result-value" id="declination">---</div>
+                        <div class="result-unit">degrees</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-label">Distance</div>
+                        <div class="result-value" id="distance">---</div>
+                        <div class="result-unit">km</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Target Map Modal -->
+    <div class="target-map-modal" id="targetMapModal">
+        <div class="target-map-header">
+            <h2>🗺️ Select Target Location</h2>
+            <button class="btn-secondary" onclick="closeTargetMapModal()" style="min-width: auto; padding: 8px 16px;">Close</button>
+        </div>
+        <div class="target-map-content">
+            <div class="target-map-info">
+                Long-press (800ms) on map to set target location
+            </div>
+            <div id="targetMap"></div>
+        </div>
+    </div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-geo-projection@4"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/topojson@3"></script>
+    <script>
+        // Global variables
+        let userQTH = null;
+        let targetLocation = null;
+        let currentMapView = 'azimuth'; // 'azimuth' or 'satellite'
+        let currentRange = 'dx'; // 'dx', 'regional', or 'local'
+        
+        // Gain blast variables
+        let gainBlastActive = false;
+        let antennaSettings = {
+            beamwidth: 60,
+            gain: 9,
+            range: 'auto'
+        };
+        
+        // Leaflet maps
+        let satelliteMap = null;
+        let targetMap = null;
+        let qthMarker = null;
+        let targetMarker = null;
+        let targetQthMarker = null;
+        let bearingLine = null;
+        
+        // Target map state
+        let targetMapState = {
+            center: null,
+            zoom: 6
+        };
+
+        // D3 map variables
+        let svg = null;
+        let projection = null;
+        let path = null;
+        let worldData = null;
+
+        // ==================== UTILITY FUNCTIONS ====================
+
+        function gridToLatLon(grid) {
+            grid = grid.toUpperCase();
+            if (grid.length !== 6) return null;
+
+            let lon = (grid.charCodeAt(0) - 65) * 20 - 180;
+            let lat = (grid.charCodeAt(1) - 65) * 10 - 90;
+            
+            lon += parseInt(grid[2]) * 2;
+            lat += parseInt(grid[3]);
+            
+            lon += (grid.charCodeAt(4) - 65) * (2/24);
+            lat += (grid.charCodeAt(5) - 65) * (1/24);
+            
+            lon += (2/24) / 2;
+            lat += (1/24) / 2;
+            
+            return [lat, lon];
+        }
+
+        function latLonToGrid(lat, lon) {
+            lon += 180;
+            lat += 90;
+            
+            let grid = '';
+            grid += String.fromCharCode(65 + Math.floor(lon / 20));
+            grid += String.fromCharCode(65 + Math.floor(lat / 10));
+            
+            grid += Math.floor((lon % 20) / 2);
+            grid += Math.floor(lat % 10);
+            
+            grid += String.fromCharCode(97 + Math.floor((lon % 2) / (2/24)));
+            grid += String.fromCharCode(97 + Math.floor((lat % 1) / (1/24)));
+            
+            return grid;
+        }
+
+        function calculateBearing(lat1, lon1, lat2, lon2) {
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+            
+            const y = Math.sin(Δλ) * Math.cos(φ2);
+            const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+            
+            let bearing = Math.atan2(y, x) * 180 / Math.PI;
+            return (bearing + 360) % 360;
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+            
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                     Math.cos(φ1) * Math.cos(φ2) *
+                     Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            
+            return R * c;
+        }
+
+        function getMagneticDeclination(lat, lon) {
+            if (lat > 39 && lat < 43 && lon > -76 && lon < -71) {
+                return -12.5;
+            }
+            
+            const agonic = -80;
+            
+            if (lon < agonic) {
+                if (lat > 30 && lat < 60) {
+                    return Math.max(-25, -15 + (lon - agonic) * 0.15);
+                }
+                return Math.max(-20, (lon - agonic) * 0.2);
+            } else {
+                if (lat > 30 && lat < 50) {
+                    return Math.min(20, (lon - agonic) * 0.15);
+                }
+                return Math.min(15, (lon - agonic) * 0.1);
+            }
+        }
+
+        // ==================== QTH LOCATION FUNCTIONS ====================
+
+        function setQTHLocation() {
+            const input = document.getElementById('latLon').value.trim();
+            
+            if (input) {
+                const parts = input.split(',').map(s => parseFloat(s.trim()));
+                
+                if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                    if (parts[0] >= -90 && parts[0] <= 90 && parts[1] >= -180 && parts[1] <= 180) {
+                        userQTH = { lat: parts[0], lon: parts[1] };
+                        initializeAzimuthalMap();
+                        showQTHInfo();
+                    } else {
+                        alert('Invalid coordinates. Latitude must be -90 to 90, Longitude -180 to 180');
+                    }
+                } else {
+                    alert('Please enter coordinates as: latitude, longitude');
+                }
+            } else {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            userQTH = {
+                                lat: position.coords.latitude,
+                                lon: position.coords.longitude
+                            };
+                            initializeAzimuthalMap();
+                            showQTHInfo();
+                        },
+                        (error) => {
+                            alert('Could not get your location. Please enter lat/lon manually.');
+                        }
+                    );
+                } else {
+                    alert('Please enter your coordinates or enable location services.');
+                }
+            }
+        }
+
+        function showQTHInfo() {
+            const grid = latLonToGrid(userQTH.lat, userQTH.lon);
+            
+            const qthDiv = document.getElementById('qthDetails');
+            qthDiv.innerHTML = `
+                <strong>Lat/Lon:</strong> ${userQTH.lat.toFixed(4)}°, ${userQTH.lon.toFixed(4)}° | 
+                <strong>Grid:</strong> ${grid}
+            `;
+            qthDiv.classList.remove('hidden');
+            
+            // Update satellite map if it exists
+            if (satelliteMap) {
+                satelliteMap.setView([userQTH.lat, userQTH.lon], 17);
+                updateSatelliteMarkers();
+            }
+            
+            // Only rebuild azimuth map if it's currently visible
+            if (currentMapView === 'azimuth') {
+                initializeAzimuthalMap();
+            }
+        }
+
+        // ==================== TARGET LOCATION FUNCTIONS ====================
+
+        async function setTargetLocation() {
+            const latLonInput = document.getElementById('targetLatLon').value.trim();
+            const gridInput = document.getElementById('targetGrid').value.trim();
+            const cityInput = document.getElementById('targetCity').value.trim();
+            
+            if (latLonInput) {
+                const parts = latLonInput.split(',').map(s => parseFloat(s.trim()));
+                
+                if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                    if (parts[0] >= -90 && parts[0] <= 90 && parts[1] >= -180 && parts[1] <= 180) {
+                        targetLocation = { lat: parts[0], lon: parts[1] };
+                        drawAzimuthalMap();
+                        calculateAndDisplayResults();
+                        showTargetInfo();
+                    } else {
+                        alert('Invalid coordinates');
+                    }
+                }
+            } else if (gridInput) {
+                if (gridInput.length !== 6) {
+                    alert('Please enter a 6-character Maidenhead grid square');
+                    return;
+                }
+                
+                const coords = gridToLatLon(gridInput);
+                
+                if (coords) {
+                    targetLocation = { lat: coords[0], lon: coords[1] };
+                    drawAzimuthalMap();
+                    calculateAndDisplayResults();
+                    showTargetInfo();
+                }
+            } else if (cityInput) {
+                try {
+                    const response = await fetch(
+                        `https://photon.komoot.io/api/?q=${encodeURIComponent(cityInput)}&limit=1`
+                    );
+                    
+                    // Check for specific error types
+                    if (!response.ok) {
+                        if (response.status === 429) {
+                            alert('Photon search limit reached - please wait a moment.\nUse Lat/Lon or Grid Square instead.');
+                        } else {
+                            alert('Photon search unavailable.\nUse Lat/Lon or Grid Square instead.');
+                        }
+                        return;
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.features && data.features.length > 0) {
+                        const coords = data.features[0].geometry.coordinates;
+                        targetLocation = {
+                            lat: coords[1],
+                            lon: coords[0]
+                        };
+                        drawAzimuthalMap();
+                        calculateAndDisplayResults();
+                        showTargetInfo();
+                    } else {
+                        alert('Location not found. Try:\n• City, Country (e.g., "Paris, France")\n• City, State (e.g., "Raleigh, NC")\n\nOr use Lat/Lon or Grid Square.');
+                    }
+                } catch (error) {
+                    // Network error
+                    alert('No internet connection for Photon search.\nUse Lat/Lon or Grid Square instead.');
+                }
+            }
+        }
+
+        function showTargetInfo() {
+            const grid = latLonToGrid(targetLocation.lat, targetLocation.lon);
+            
+            const targetDiv = document.getElementById('targetDetails');
+            targetDiv.innerHTML = `
+                <strong>Lat/Lon:</strong> ${targetLocation.lat.toFixed(4)}°, ${targetLocation.lon.toFixed(4)}° | 
+                <strong>Grid:</strong> ${grid}
+            `;
+            targetDiv.classList.remove('hidden');
+            
+            // Show radiation sim section
+            document.getElementById('radiationSimSection').style.display = 'block';
+        }
+
+        function calculateAndDisplayResults() {
+            if (!userQTH || !targetLocation) return;
+
+            const trueAzimuth = calculateBearing(
+                userQTH.lat, userQTH.lon,
+                targetLocation.lat, targetLocation.lon
+            );
+
+            const declination = getMagneticDeclination(userQTH.lat, userQTH.lon);
+            const magneticBearing = (trueAzimuth + declination + 360) % 360;
+
+            const distance = calculateDistance(
+                userQTH.lat, userQTH.lon,
+                targetLocation.lat, targetLocation.lon
+            );
+
+            document.getElementById('trueAzimuth').textContent = trueAzimuth.toFixed(1) + '°';
+            document.getElementById('magneticBearing').textContent = magneticBearing.toFixed(1) + '°';
+            document.getElementById('declination').textContent = declination.toFixed(1) + '°';
+            document.getElementById('distance').textContent = distance.toFixed(0);
+
+            document.getElementById('results').classList.remove('hidden');
+        }
+
+        // ==================== AZIMUTHAL MAP (STATIC) ====================
+
+        function initializeAzimuthalMap() {
+            if (!userQTH) return;
+
+            document.getElementById('targetSection').style.display = 'block';
+
+            const container = document.getElementById('map').parentElement;
+            const availableWidth = window.innerWidth;
+            const availableHeight = window.innerWidth; // Square
+            
+            const width = availableWidth;
+            const height = availableHeight;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const circleRadius = (width / 2) - 1; // 1px buffer for stroke
+
+            // Whole earth view
+            const initialRadiusMiles = 12430;
+            const radiusKm = initialRadiusMiles * 1.60934;
+            const earthRadiusKm = 6371;
+            const angularDistance = radiusKm / earthRadiusKm;
+            const baseScale = circleRadius / angularDistance;
+
+            projection = d3.geoAzimuthalEquidistant()
+                .rotate([-userQTH.lon, -userQTH.lat])
+                .scale(baseScale)
+                .translate([centerX, centerY]);
+
+            path = d3.geoPath().projection(projection);
+
+            d3.select('#map').selectAll('*').remove();
+
+            svg = d3.select('#map')
+                .attr('width', width)
+                .attr('height', height)
+                .style('display', 'block')
+                .style('margin', '0 auto');
+
+            // Load world data
+            d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+                .then(world => {
+                    worldData = topojson.feature(world, world.objects.countries);
+                    drawAzimuthalMap();
+                });
+        }
+
+        function drawAzimuthalMap() {
+            if (!svg || !worldData || !userQTH) return;
+
+            const width = parseInt(svg.attr('width'));
+            const height = parseInt(svg.attr('height'));
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const circleRadius = (width / 2) - 1;
+
+            // Get radius and intervals based on current range - ALL IN ONE PLACE
+            let currentRadiusMiles;
+            let intervals;
+            if (currentRange === 'dx') {
+                currentRadiusMiles = 12430; // Whole earth
+                intervals = [3000, 6000, 9000, 12000];
+            } else if (currentRange === 'regional') {
+                currentRadiusMiles = 6000; // Continental
+                intervals = [1500, 3000, 4500, 6000];
+            } else {
+                currentRadiusMiles = 3000; // Local
+                intervals = [750, 1500, 2250, 3000];
+            }
+
+            // Recalculate projection scale for current range
+            const radiusKm = currentRadiusMiles * 1.60934;
+            const earthRadiusKm = 6371;
+            const angularDistance = radiusKm / earthRadiusKm;
+            const baseScale = circleRadius / angularDistance;
+
+            projection.scale(baseScale);
+
+            svg.selectAll('*').remove();
+
+            // Clip path
+            svg.append('defs')
+                .append('clipPath')
+                .attr('id', 'map-clip')
+                .append('circle')
+                .attr('cx', centerX)
+                .attr('cy', centerY)
+                .attr('r', circleRadius);
+
+            // Ocean
+            svg.append('circle')
+                .attr('cx', centerX)
+                .attr('cy', centerY)
+                .attr('r', circleRadius)
+                .attr('fill', '#b3d9ff')
+                .attr('stroke', '#666')
+                .attr('stroke-width', 2);
+
+            const mapGroup = svg.append('g')
+                .attr('clip-path', 'url(#map-clip)');
+
+            // Countries
+            mapGroup.append('g')
+                .selectAll('path')
+                .data(worldData.features)
+                .enter()
+                .append('path')
+                .attr('d', path)
+                .attr('fill', '#e0e0e0')
+                .attr('stroke', '#999')
+                .attr('stroke-width', 0.5);
+
+            // Distance rings (using intervals from above)
+            const qthProj = projection([userQTH.lon, userQTH.lat]);
+
+            intervals.forEach(distMiles => {
+                const distKm = distMiles * 1.60934;
+                const angularDist = distKm / earthRadiusKm;
+                const pixelRadius = projection.scale() * angularDist;
+
+                mapGroup.append('circle')
+                    .attr('cx', qthProj[0])
+                    .attr('cy', qthProj[1])
+                    .attr('r', pixelRadius)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#999')
+                    .attr('stroke-width', 1)
+                    .attr('stroke-dasharray', '5,5')
+                    .attr('opacity', 0.4);
+            });
+
+            // Bearing lines (using currentRadiusMiles from above)
+            const distKm = currentRadiusMiles * 1.60934;
+            const angularDist = distKm / earthRadiusKm;
+            const pixelRadius = projection.scale() * angularDist;
+
+            // Draw all 10° lines first (medium weight)
+            for (let bearing = 0; bearing < 360; bearing += 10) {
+                // Skip the 30° intervals - we'll draw those separately
+                if (bearing % 30 === 0) continue;
+
+                const bearingRad = bearing * Math.PI / 180;
+                const endX = qthProj[0] + pixelRadius * Math.sin(bearingRad);
+                const endY = qthProj[1] - pixelRadius * Math.cos(bearingRad);
+
+                mapGroup.append('line')
+                    .attr('x1', qthProj[0])
+                    .attr('y1', qthProj[1])
+                    .attr('x2', endX)
+                    .attr('y2', endY)
+                    .attr('stroke', '#666')
+                    .attr('stroke-width', 1)
+                    .attr('opacity', 0.3);
+            }
+
+            // Draw 30° lines (darker and bolder with labels)
+            for (let bearing = 0; bearing < 360; bearing += 30) {
+                const bearingRad = bearing * Math.PI / 180;
+                const endX = qthProj[0] + pixelRadius * Math.sin(bearingRad);
+                const endY = qthProj[1] - pixelRadius * Math.cos(bearingRad);
+
+                mapGroup.append('line')
+                    .attr('x1', qthProj[0])
+                    .attr('y1', qthProj[1])
+                    .attr('x2', endX)
+                    .attr('y2', endY)
+                    .attr('stroke', '#333')
+                    .attr('stroke-width', 1.5)
+                    .attr('opacity', 0.5);
+
+                const labelDist = pixelRadius * 0.92;
+                const labelX = qthProj[0] + labelDist * Math.sin(bearingRad);
+                const labelY = qthProj[1] - labelDist * Math.cos(bearingRad);
+
+                mapGroup.append('text')
+                    .attr('x', labelX)
+                    .attr('y', labelY)
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'middle')
+                    .attr('font-size', '11px')
+                    .attr('font-weight', '600')
+                    .attr('fill', '#444')
+                    .text(`${bearing}°`);
+            }
+
+            // QTH marker
+            mapGroup.append('circle')
+                .attr('cx', qthProj[0])
+                .attr('cy', qthProj[1])
+                .attr('r', 8)
+                .attr('fill', '#e74c3c')
+                .attr('stroke', 'white')
+                .attr('stroke-width', 2);
+
+            // Target marker and line
+            if (targetLocation) {
+                const targetProj = projection([targetLocation.lon, targetLocation.lat]);
+
+                mapGroup.append('line')
+                    .attr('x1', qthProj[0])
+                    .attr('y1', qthProj[1])
+                    .attr('x2', targetProj[0])
+                    .attr('y2', targetProj[1])
+                    .attr('stroke', '#667eea')
+                    .attr('stroke-width', 3)
+                    .attr('stroke-dasharray', '10,5');
+
+                mapGroup.append('circle')
+                    .attr('cx', targetProj[0])
+                    .attr('cy', targetProj[1])
+                    .attr('r', 8)
+                    .attr('fill', '#3498db')
+                    .attr('stroke', 'white')
+                    .attr('stroke-width', 2);
+            }
+            
+            // Draw gain pattern if active
+            if (gainBlastActive && targetLocation) {
+                drawGainPattern();
+            }
+        }
+
+        // ==================== RADIATION SIM FUNCTIONS ====================
+
+        let disclaimerAccepted = false;
+
+        function toggleRadiationSimControls() {
+            if (!disclaimerAccepted) {
+                // Show disclaimer modal
+                document.getElementById('disclaimerModal').classList.add('active');
+                return;
+            }
+            
+            const controls = document.getElementById('radiationSimControls');
+            controls.classList.toggle('active');
+        }
+
+        function acceptDisclaimer() {
+            disclaimerAccepted = true;
+            document.getElementById('disclaimerModal').classList.remove('active');
+            // Now toggle the controls
+            const controls = document.getElementById('radiationSimControls');
+            controls.classList.add('active');
+        }
+
+        const antennaPresets = {
+            dipole: { beamwidth: 78, gain: 2.15 },
+            magloop: { beamwidth: 90, gain: 3 },
+            yagi3: { beamwidth: 60, gain: 9 },
+            yagi5: { beamwidth: 45, gain: 12 },
+            yagi7: { beamwidth: 30, gain: 14 },
+            logperiodic: { beamwidth: 60, gain: 10 },
+            custom: { beamwidth: 60, gain: 9 }
+        };
+
+        function updateAntennaPreset() {
+            const preset = document.getElementById('antennaPreset').value;
+            const beamwidthInput = document.getElementById('beamwidth');
+            const gainInput = document.getElementById('antennaGain');
+            
+            if (preset !== 'custom') {
+                const settings = antennaPresets[preset];
+                beamwidthInput.value = settings.beamwidth;
+                gainInput.value = settings.gain;
+                beamwidthInput.disabled = true;
+                gainInput.disabled = true;
+            } else {
+                beamwidthInput.disabled = false;
+                gainInput.disabled = false;
+            }
+            
+            // Update antenna settings
+            antennaSettings.beamwidth = parseFloat(beamwidthInput.value);
+            antennaSettings.gain = parseFloat(gainInput.value);
+            
+            // Redraw if active
+            if (gainBlastActive) {
+                drawAzimuthalMap();
+            }
+        }
+
+        function toggleGainBlast() {
+            if (!targetLocation) {
+                alert('Please set a target location first');
+                return;
+            }
+            
+            gainBlastActive = !gainBlastActive;
+            const button = document.getElementById('blastButton');
+            
+            if (gainBlastActive) {
+                button.classList.remove('off');
+                button.classList.add('on');
+                button.innerHTML = '⚡ Stop Blasting';
+                
+                // Get current settings
+                antennaSettings.beamwidth = parseFloat(document.getElementById('beamwidth').value);
+                antennaSettings.gain = parseFloat(document.getElementById('antennaGain').value);
+                antennaSettings.range = document.getElementById('maxRange').value;
+            } else {
+                button.classList.remove('on');
+                button.classList.add('off');
+                button.innerHTML = '🔥 Blast the Gain!';
+            }
+            
+            drawAzimuthalMap();
+        }
+
+        function drawGainPattern() {
+            if (!svg || !userQTH || !targetLocation || !gainBlastActive) return;
+            
+            // Remove any existing gain pattern first
+            svg.select('#gainPattern').remove();
+            svg.select('#wedgeClip').remove();
+            
+            const width = parseInt(svg.attr('width'));
+            const height = parseInt(svg.attr('height'));
+            
+            // Calculate bearing from QTH to target
+            const bearing = calculateBearing(userQTH.lat, userQTH.lon, targetLocation.lat, targetLocation.lon);
+            
+            // Get beamwidth
+            const beamwidth = antennaSettings.beamwidth;
+            const halfBeam = beamwidth / 2;
+            
+            // Determine max range in pixels
+            let maxRangeMiles;
+            if (antennaSettings.range === 'auto') {
+                // Distance to target
+                maxRangeMiles = calculateDistance(userQTH.lat, userQTH.lon, targetLocation.lat, targetLocation.lon) * 0.621371; // km to miles
+            } else {
+                // Full map range
+                if (currentRange === 'dx') maxRangeMiles = 12430;
+                else if (currentRange === 'regional') maxRangeMiles = 6000;
+                else maxRangeMiles = 3000;
+            }
+            
+            const earthRadiusKm = 6371;
+            const distKm = maxRangeMiles * 1.60934;
+            const angularDist = distKm / earthRadiusKm;
+            const maxRangePixels = projection.scale() * angularDist;
+            
+            const qthProj = projection([userQTH.lon, userQTH.lat]);
+            
+            // Create gradient based on gain (higher gain = more intense)
+            // Minimum 0.4 opacity, maximum 0.8 opacity
+            const intensity = 0.4 + ((antennaSettings.gain - 2) / 20) * 0.4;
+            const gradientId = 'gainGradient';
+            
+            // Remove existing gradient if any
+            svg.select(`#${gradientId}`).remove();
+            
+            const defs = svg.select('defs');
+            const gradient = defs.append('radialGradient')
+                .attr('id', gradientId);
+            
+            gradient.append('stop')
+                .attr('offset', '0%')
+                .attr('stop-color', '#ff6b35')
+                .attr('stop-opacity', intensity);
+            
+            gradient.append('stop')
+                .attr('offset', '50%')
+                .attr('stop-color', '#f7931e')
+                .attr('stop-opacity', intensity * 0.6);
+            
+            gradient.append('stop')
+                .attr('offset', '100%')
+                .attr('stop-color', '#e74c3c')
+                .attr('stop-opacity', 0);
+            
+            // Calculate wedge points
+            const bearing1 = (bearing - halfBeam + 360) % 360;
+            const bearing2 = (bearing + halfBeam) % 360;
+            
+            const bearing1Rad = bearing1 * Math.PI / 180;
+            const bearing2Rad = bearing2 * Math.PI / 180;
+            
+            const edge1X = qthProj[0] + maxRangePixels * Math.sin(bearing1Rad);
+            const edge1Y = qthProj[1] - maxRangePixels * Math.cos(bearing1Rad);
+            const edge2X = qthProj[0] + maxRangePixels * Math.sin(bearing2Rad);
+            const edge2Y = qthProj[1] - maxRangePixels * Math.cos(bearing2Rad);
+            
+            // Draw the wedge with gradient
+            const wedgePath = `M ${qthProj[0]},${qthProj[1]} L ${edge1X},${edge1Y} A ${maxRangePixels},${maxRangePixels} 0 0,1 ${edge2X},${edge2Y} Z`;
+            
+            const gainGroup = svg.append('g')
+                .attr('id', 'gainPattern')
+                .attr('clip-path', 'url(#map-clip)');
+            
+            // Create a clip path for the wedge
+            const wedgeClipId = 'wedgeClip';
+            svg.select('defs').append('clipPath')
+                .attr('id', wedgeClipId)
+                .append('path')
+                .attr('d', wedgePath);
+            
+            // Draw main wedge
+            gainGroup.append('path')
+                .attr('d', wedgePath)
+                .attr('fill', `url(#${gradientId})`)
+                .attr('stroke', 'none');
+            
+            // Create animated wave pulses that travel outward from QTH
+            const waveGroup = gainGroup.append('g')
+                .attr('clip-path', `url(#${wedgeClipId})`);
+            
+            // Draw 2 expanding circles (waves) with staggered timing
+            for (let i = 0; i < 2; i++) {
+                const wave = waveGroup.append('circle')
+                    .attr('cx', qthProj[0])
+                    .attr('cy', qthProj[1])
+                    .attr('r', 0)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#ffaa00')
+                    .attr('stroke-width', maxRangePixels * 0.3) // Wide stroke to create wave effect
+                    .attr('opacity', 0);
+                
+                // Animate the circle expanding and fading
+                wave.append('animate')
+                    .attr('attributeName', 'r')
+                    .attr('from', 0)
+                    .attr('to', maxRangePixels)
+                    .attr('dur', '6s')
+                    .attr('begin', `${i * 3}s`)
+                    .attr('repeatCount', 'indefinite');
+                
+                wave.append('animate')
+                    .attr('attributeName', 'opacity')
+                    .attr('values', '0;0.5;0')
+                    .attr('keyTimes', '0;0.1;1')
+                    .attr('dur', '6s')
+                    .attr('begin', `${i * 3}s`)
+                    .attr('repeatCount', 'indefinite');
+            }
+        }
+
+        // ==================== MAP VIEW TOGGLE ====================
+
+        function cycleRange() {
+            if (!userQTH) {
+                alert('Please set your QTH location first');
+                return;
+            }
+
+            // Cycle through ranges: DX → Regional → Local → DX
+            if (currentRange === 'dx') {
+                currentRange = 'regional';
+            } else if (currentRange === 'regional') {
+                currentRange = 'local';
+            } else {
+                currentRange = 'dx';
+            }
+
+            // Update label
+            const label = document.getElementById('rangeLabel');
+            if (currentRange === 'dx') {
+                label.textContent = 'DX';
+            } else if (currentRange === 'regional') {
+                label.textContent = 'Regional';
+            } else {
+                label.textContent = 'Local';
+            }
+
+            // Redraw map with new range
+            drawAzimuthalMap();
+        }
+
+        function toggleMapView() {
+            if (!userQTH) {
+                alert('Please set your QTH location first');
+                return;
+            }
+
+            if (currentMapView === 'azimuth') {
+                // Switch to satellite
+                currentMapView = 'satellite';
+                document.getElementById('worldMapContainer').classList.add('hidden');
+                document.getElementById('satelliteMapContainer').classList.remove('hidden');
+
+                if (!satelliteMap) {
+                    initializeSatelliteMap();
+                } else {
+                    satelliteMap.setView([userQTH.lat, userQTH.lon], 17);
+                    updateSatelliteMarkers();
+                    // Tell Leaflet to recalculate size
+                    setTimeout(() => satelliteMap.invalidateSize(), 100);
+                }
+            } else {
+                // Switch to azimuth
+                currentMapView = 'azimuth';
+                document.getElementById('satelliteMapContainer').classList.add('hidden');
+                document.getElementById('worldMapContainer').classList.remove('hidden');
+                
+                // Reinitialize azimuth map to pick up any QTH changes
+                if (userQTH) {
+                    initializeAzimuthalMap();
+                }
+            }
+        }
+
+        // ==================== SATELLITE MAP ====================
+
+        function initializeSatelliteMap() {
+            satelliteMap = L.map('satelliteMap').setView([userQTH.lat, userQTH.lon], 17);
+
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri',
+                maxZoom: 19
+            }).addTo(satelliteMap);
+
+            L.control.scale({ imperial: true, metric: true }).addTo(satelliteMap);
+
+            updateSatelliteMarkers();
+        }
+
+        function updateSatelliteMarkers() {
+            if (!satelliteMap || !userQTH) return;
+
+            if (qthMarker) satelliteMap.removeLayer(qthMarker);
+
+            qthMarker = L.marker([userQTH.lat, userQTH.lon], {
+                icon: L.divIcon({
+                    className: 'qth-custom-icon',
+                    html: '<div style="width: 16px; height: 16px; background: #e74c3c; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                }),
+                draggable: true
+            }).addTo(satelliteMap);
+
+            qthMarker.on('dragend', function() {
+                const newLatLng = qthMarker.getLatLng();
+                userQTH.lat = newLatLng.lat;
+                userQTH.lon = newLatLng.lng;
+
+                showQTHInfo();
+
+                if (targetLocation) {
+                    calculateAndDisplayResults();
+                }
+            });
+
+            // Long-press to set QTH - with proper movement detection
+            let touchTimer = null;
+            let touchStartPos = null;
+            let hasMoved = false;
+
+            satelliteMap.getContainer().addEventListener('touchstart', function(e) {
+                // Ignore if touching marker
+                if (e.target.closest('.leaflet-marker-icon')) return;
+                
+                // Ignore multi-touch (pinch zoom)
+                if (e.touches.length > 1) {
+                    clearTimeout(touchTimer);
+                    return;
+                }
+
+                const touch = e.touches[0];
+                touchStartPos = {
+                    x: touch.clientX,
+                    y: touch.clientY,
+                    lat: null,
+                    lng: null
+                };
+                hasMoved = false;
+
+                // Store the map coordinates at touch start - FIXED coordinate calculation
+                const rect = satelliteMap.getContainer().getBoundingClientRect();
+                const mapX = touch.clientX - rect.left;
+                const mapY = touch.clientY - rect.top;
+                const latlng = satelliteMap.containerPointToLatLng([mapX, mapY]);
+                touchStartPos.lat = latlng.lat;
+                touchStartPos.lng = latlng.lng;
+
+                touchTimer = setTimeout(function() {
+                    // Only execute if user hasn't moved
+                    if (!hasMoved && touchStartPos) {
+                        userQTH.lat = touchStartPos.lat;
+                        userQTH.lon = touchStartPos.lng;
+
+                        qthMarker.setLatLng([touchStartPos.lat, touchStartPos.lng]);
+                        satelliteMap.setView([touchStartPos.lat, touchStartPos.lng], satelliteMap.getZoom());
+
+                        if (navigator.vibrate) {
+                            navigator.vibrate(50);
+                        }
+
+                        showQTHInfo();
+
+                        if (targetLocation) {
+                            calculateAndDisplayResults();
+                        }
+                    }
+                }, 800);
+            });
+
+            satelliteMap.getContainer().addEventListener('touchmove', function(e) {
+                if (touchStartPos && e.touches[0]) {
+                    const touch = e.touches[0];
+                    const dx = touch.clientX - touchStartPos.x;
+                    const dy = touch.clientY - touchStartPos.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    // Cancel if moved more than 10 pixels
+                    if (distance > 10) {
+                        hasMoved = true;
+                        clearTimeout(touchTimer);
+                        touchTimer = null;
+                    }
+                }
+            });
+
+            satelliteMap.getContainer().addEventListener('touchend', function() {
+                clearTimeout(touchTimer);
+                touchTimer = null;
+                touchStartPos = null;
+                hasMoved = false;
+            });
+
+            satelliteMap.getContainer().addEventListener('touchcancel', function() {
+                clearTimeout(touchTimer);
+                touchTimer = null;
+                touchStartPos = null;
+                hasMoved = false;
+            });
+        }
+
+        // ==================== TARGET MAP MODAL ====================
+
+        function openTargetMapModal() {
+            if (!userQTH) {
+                alert('Please set your QTH location first');
+                return;
+            }
+
+            document.getElementById('targetMapModal').classList.add('active');
+            document.getElementById('mainContainer').classList.add('dimmed');
+
+            if (!targetMap) {
+                initializeTargetMap();
+            } else {
+                // Restore previous state or set initial view
+                if (targetLocation) {
+                    // Center on target
+                    targetMap.setView([targetLocation.lat, targetLocation.lon], targetMapState.zoom);
+                } else if (targetMapState.center) {
+                    // Restore last position
+                    targetMap.setView(targetMapState.center, targetMapState.zoom);
+                } else {
+                    // First time: center on QTH with medium zoom
+                    targetMap.setView([userQTH.lat, userQTH.lon], 6);
+                }
+                updateTargetMapMarkers();
+                
+                // Force Leaflet to recalculate size and reload tiles
+                setTimeout(() => {
+                    targetMap.invalidateSize();
+                }, 100);
+            }
+        }
+
+        function closeTargetMapModal() {
+            // Save current map state
+            if (targetMap) {
+                targetMapState.center = targetMap.getCenter();
+                targetMapState.zoom = targetMap.getZoom();
+            }
+
+            document.getElementById('targetMapModal').classList.remove('active');
+            document.getElementById('mainContainer').classList.remove('dimmed');
+        }
+
+        function initializeTargetMap() {
+            const initialCenter = targetLocation 
+                ? [targetLocation.lat, targetLocation.lon]
+                : targetMapState.center || [userQTH.lat, userQTH.lon];
+            const initialZoom = targetLocation ? targetMapState.zoom : 6;
+
+            targetMap = L.map('targetMap').setView(initialCenter, initialZoom);
+
+            // OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }).addTo(targetMap);
+
+            L.control.scale({ imperial: true, metric: true }).addTo(targetMap);
+
+            updateTargetMapMarkers();
+            setupTargetMapLongPress();
+        }
+
+        function updateTargetMapMarkers() {
+            if (!targetMap) return;
+
+            // Clear existing markers
+            if (targetMarker) targetMap.removeLayer(targetMarker);
+            if (targetQthMarker) targetMap.removeLayer(targetQthMarker);
+            if (bearingLine) targetMap.removeLayer(bearingLine);
+
+            // QTH marker (always show)
+            targetQthMarker = L.marker([userQTH.lat, userQTH.lon], {
+                icon: L.divIcon({
+                    className: 'qth-icon',
+                    html: '<div style="width: 12px; height: 12px; background: #e74c3c; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+                    iconSize: [16, 16],
+                    iconAnchor: [8, 8]
+                })
+            }).addTo(targetMap);
+
+            // Target marker and line (if target exists)
+            if (targetLocation) {
+                targetMarker = L.marker([targetLocation.lat, targetLocation.lon], {
+                    icon: L.divIcon({
+                        className: 'target-icon',
+                        html: '<div style="width: 16px; height: 16px; background: #3498db; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10]
+                    })
+                }).addTo(targetMap);
+
+                bearingLine = L.polyline(
+                    [[userQTH.lat, userQTH.lon], [targetLocation.lat, targetLocation.lon]],
+                    {
+                        color: '#667eea',
+                        weight: 3,
+                        opacity: 0.7,
+                        dashArray: '10, 5'
+                    }
+                ).addTo(targetMap);
+            }
+        }
+
+        function setupTargetMapLongPress() {
+            let longPressTimer;
+            let startPos = null;
+
+            targetMap.getContainer().addEventListener('mousedown', function(e) {
+                startPos = { x: e.clientX, y: e.clientY };
+
+                longPressTimer = setTimeout(() => {
+                    const rect = targetMap.getContainer().getBoundingClientRect();
+                    const mapX = e.clientX - rect.left;
+                    const mapY = e.clientY - rect.top;
+                    const latlng = targetMap.containerPointToLatLng([mapX, mapY]);
+                    setTargetFromMap(latlng.lat, latlng.lng);
+                }, 800);
+            });
+
+            targetMap.getContainer().addEventListener('touchstart', function(e) {
+                if (e.touches.length !== 1) return;
+
+                const touch = e.touches[0];
+                startPos = { x: touch.clientX, y: touch.clientY };
+
+                longPressTimer = setTimeout(() => {
+                    const rect = targetMap.getContainer().getBoundingClientRect();
+                    const mapX = touch.clientX - rect.left;
+                    const mapY = touch.clientY - rect.top;
+                    const latlng = targetMap.containerPointToLatLng([mapX, mapY]);
+                    setTargetFromMap(latlng.lat, latlng.lng);
+                }, 800);
+            });
+
+            targetMap.getContainer().addEventListener('mousemove', function(e) {
+                if (startPos) {
+                    const dx = e.clientX - startPos.x;
+                    const dy = e.clientY - startPos.y;
+                    if (Math.sqrt(dx * dx + dy * dy) > 10) {
+                        clearTimeout(longPressTimer);
+                    }
+                }
+            });
+
+            targetMap.getContainer().addEventListener('touchmove', function(e) {
+                if (startPos && e.touches[0]) {
+                    const touch = e.touches[0];
+                    const dx = touch.clientX - startPos.x;
+                    const dy = touch.clientY - startPos.y;
+                    if (Math.sqrt(dx * dx + dy * dy) > 10) {
+                        clearTimeout(longPressTimer);
+                    }
+                }
+            });
+
+            targetMap.getContainer().addEventListener('mouseup', function() {
+                clearTimeout(longPressTimer);
+            });
+
+            targetMap.getContainer().addEventListener('touchend', function() {
+                clearTimeout(longPressTimer);
+            });
+        }
+
+        function setTargetFromMap(lat, lon) {
+            targetLocation = { lat: lat, lon: lon };
+
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+
+            updateTargetMapMarkers();
+            showTargetInfo();
+            calculateAndDisplayResults();
+            drawAzimuthalMap();
+        }
+
+        // ==================== EVENT LISTENERS ====================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('latLon').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') setQTHLocation();
+            });
+
+            document.getElementById('targetLatLon').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') setTargetLocation();
+            });
+
+            document.getElementById('targetGrid').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') setTargetLocation();
+            });
+
+            document.getElementById('targetCity').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') setTargetLocation();
+            });
+        });
+    </script>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Service Worker registered'))
+                .catch(err => console.log('Service Worker registration failed'));
+        }
+    </script>
+</body>
+</html>
