@@ -2,6 +2,12 @@
 
 This tool provides a **magnetic declination corrected bearing** from your QTH to your target QSO to assist with field placement and orientation of your antenna. 
 
+It is meant to be used on your phone in the field. It can run on a desktop but it's not as cool. 
+
+## How to install: 
+
+**open the link in Chrome on your phone. Click the 3 dots > add to home screen > install**
+It requires internet for all the fancy maps. But you can still calculate bearings via grid squares and Lat/Lon offline.
 
 ## How to use:
 
