@@ -940,7 +940,7 @@
         // Valid 2020-2025, accurate to ~1 degree
         
         function getMagneticDeclination(lat, lon) {
-            // WMM2020 Gauss coefficients (simplified for degrees 1-3)
+            // Full WMM2020 Gauss coefficients (degree 12 for 0.05° accuracy)
             const coeffs = [
                 {n:1, m:0, gnm:-29404.8, hnm:0.0, dgnm:6.7, dhnm:0.0},
                 {n:1, m:1, gnm:-1450.9, hnm:4652.5, dgnm:7.7, dhnm:-25.9},
@@ -950,7 +950,88 @@
                 {n:3, m:0, gnm:1363.2, hnm:0.0, dgnm:2.8, dhnm:0.0},
                 {n:3, m:1, gnm:-2381.2, hnm:-82.1, dgnm:-6.2, dhnm:5.7},
                 {n:3, m:2, gnm:1236.2, hnm:241.9, dgnm:3.4, dhnm:-1.0},
-                {n:3, m:3, gnm:525.7, hnm:-543.4, dgnm:-12.2, dhnm:1.1}
+                {n:3, m:3, gnm:525.7, hnm:-543.4, dgnm:-12.2, dhnm:1.1},
+                {n:4, m:0, gnm:903.0, hnm:0.0, dgnm:-1.1, dhnm:0.0},
+                {n:4, m:1, gnm:809.5, hnm:281.9, dgnm:1.6, dhnm:-0.6},
+                {n:4, m:2, gnm:86.3, hnm:-158.4, dgnm:-3.8, dhnm:0.4},
+                {n:4, m:3, gnm:-309.4, hnm:199.7, dgnm:3.0, dhnm:1.3},
+                {n:4, m:4, gnm:48.0, hnm:-350.7, dgnm:-2.0, dhnm:-5.9},
+                {n:5, m:0, gnm:-234.3, hnm:0.0, dgnm:-0.3, dhnm:0.0},
+                {n:5, m:1, gnm:363.2, hnm:47.7, dgnm:0.6, dhnm:0.5},
+                {n:5, m:2, gnm:187.8, hnm:208.3, dgnm:-0.7, dhnm:2.5},
+                {n:5, m:3, gnm:-140.7, hnm:-121.2, dgnm:0.1, dhnm:-0.9},
+                {n:5, m:4, gnm:-151.2, hnm:32.3, dgnm:1.2, dhnm:3.0},
+                {n:5, m:5, gnm:13.5, hnm:99.0, dgnm:1.0, dhnm:0.5},
+                {n:6, m:0, gnm:65.5, hnm:0.0, dgnm:-0.6, dhnm:0.0},
+                {n:6, m:1, gnm:65.6, hnm:-19.1, dgnm:-0.4, dhnm:0.1},
+                {n:6, m:2, gnm:73.0, hnm:25.1, dgnm:0.5, dhnm:-1.8},
+                {n:6, m:3, gnm:-121.5, hnm:52.8, dgnm:1.4, dhnm:-1.4},
+                {n:6, m:4, gnm:-36.2, hnm:-64.5, dgnm:-1.4, dhnm:0.9},
+                {n:6, m:5, gnm:13.5, hnm:9.0, dgnm:0.0, dhnm:0.1},
+                {n:6, m:6, gnm:-64.7, hnm:68.1, dgnm:0.8, dhnm:1.0},
+                {n:7, m:0, gnm:80.6, hnm:0.0, dgnm:-0.1, dhnm:0.0},
+                {n:7, m:1, gnm:-76.8, hnm:-51.4, dgnm:-0.3, dhnm:0.5},
+                {n:7, m:2, gnm:-8.3, hnm:-16.8, dgnm:-0.1, dhnm:0.6},
+                {n:7, m:3, gnm:56.5, hnm:2.3, dgnm:0.7, dhnm:-0.7},
+                {n:7, m:4, gnm:15.8, hnm:23.5, dgnm:0.2, dhnm:-0.2},
+                {n:7, m:5, gnm:6.4, hnm:-2.2, dgnm:-0.5, dhnm:-1.2},
+                {n:7, m:6, gnm:-7.2, hnm:-27.2, dgnm:-0.8, dhnm:0.2},
+                {n:7, m:7, gnm:9.8, hnm:-1.9, dgnm:1.0, dhnm:0.3},
+                {n:8, m:0, gnm:23.7, hnm:0.0, dgnm:-0.1, dhnm:0.0},
+                {n:8, m:1, gnm:9.7, hnm:8.4, dgnm:0.1, dhnm:-0.3},
+                {n:8, m:2, gnm:-17.6, hnm:-15.3, dgnm:-0.1, dhnm:0.7},
+                {n:8, m:3, gnm:-0.5, hnm:12.8, dgnm:0.5, dhnm:-0.2},
+                {n:8, m:4, gnm:-21.1, hnm:-11.8, dgnm:-0.1, dhnm:0.5},
+                {n:8, m:5, gnm:15.3, hnm:14.9, dgnm:0.4, dhnm:-0.3},
+                {n:8, m:6, gnm:13.7, hnm:3.6, dgnm:0.5, dhnm:-0.5},
+                {n:8, m:7, gnm:-16.5, hnm:-6.9, dgnm:0.0, dhnm:0.4},
+                {n:8, m:8, gnm:-0.3, hnm:2.8, dgnm:0.4, dhnm:0.1},
+                {n:9, m:0, gnm:5.0, hnm:0.0, dgnm:-0.1, dhnm:0.0},
+                {n:9, m:1, gnm:8.2, hnm:-23.4, dgnm:-0.2, dhnm:-0.3},
+                {n:9, m:2, gnm:2.9, hnm:11.0, dgnm:0.0, dhnm:-0.1},
+                {n:9, m:3, gnm:-1.4, hnm:9.8, dgnm:-0.1, dhnm:-0.1},
+                {n:9, m:4, gnm:-1.1, hnm:-5.1, dgnm:-0.1, dhnm:0.0},
+                {n:9, m:5, gnm:-13.2, hnm:7.8, dgnm:-0.1, dhnm:0.1},
+                {n:9, m:6, gnm:1.1, hnm:-0.9, dgnm:0.0, dhnm:0.1},
+                {n:9, m:7, gnm:8.8, hnm:0.4, dgnm:0.0, dhnm:-0.2},
+                {n:9, m:8, gnm:-1.5, hnm:9.6, dgnm:0.1, dhnm:-0.1},
+                {n:9, m:9, gnm:-6.9, hnm:3.9, dgnm:0.1, dhnm:-0.1},
+                {n:10, m:0, gnm:-2.3, hnm:0.0, dgnm:0.0, dhnm:0.0},
+                {n:10, m:1, gnm:0.2, hnm:-8.6, dgnm:0.0, dhnm:0.0},
+                {n:10, m:2, gnm:0.9, hnm:3.0, dgnm:-0.1, dhnm:0.0},
+                {n:10, m:3, gnm:-0.5, hnm:4.1, dgnm:0.0, dhnm:0.0},
+                {n:10, m:4, gnm:0.3, hnm:0.6, dgnm:0.0, dhnm:0.0},
+                {n:10, m:5, gnm:-0.4, hnm:-0.2, dgnm:0.0, dhnm:0.0},
+                {n:10, m:6, gnm:-0.1, hnm:1.7, dgnm:0.0, dhnm:0.0},
+                {n:10, m:7, gnm:1.4, hnm:-0.6, dgnm:0.0, dhnm:0.0},
+                {n:10, m:8, gnm:-0.5, hnm:-1.0, dgnm:0.0, dhnm:0.0},
+                {n:10, m:9, gnm:0.8, hnm:0.0, dgnm:0.0, dhnm:0.0},
+                {n:10, m:10, gnm:-0.1, hnm:0.6, dgnm:0.0, dhnm:0.0},
+                {n:11, m:0, gnm:3.0, hnm:0.0, dgnm:0.0, dhnm:0.0},
+                {n:11, m:1, gnm:-1.4, hnm:-0.5, dgnm:0.0, dhnm:0.0},
+                {n:11, m:2, gnm:0.2, hnm:1.8, dgnm:0.0, dhnm:0.0},
+                {n:11, m:3, gnm:3.1, hnm:-1.1, dgnm:0.0, dhnm:0.0},
+                {n:11, m:4, gnm:-0.6, hnm:-0.7, dgnm:0.0, dhnm:0.0},
+                {n:11, m:5, gnm:-2.0, hnm:-0.1, dgnm:0.0, dhnm:0.0},
+                {n:11, m:6, gnm:0.1, hnm:0.7, dgnm:0.0, dhnm:0.0},
+                {n:11, m:7, gnm:0.5, hnm:-0.2, dgnm:0.0, dhnm:0.0},
+                {n:11, m:8, gnm:1.3, hnm:0.4, dgnm:0.0, dhnm:0.0},
+                {n:11, m:9, gnm:-1.2, hnm:0.4, dgnm:0.0, dhnm:0.0},
+                {n:11, m:10, gnm:0.7, hnm:0.2, dgnm:0.0, dhnm:0.0},
+                {n:11, m:11, gnm:0.3, hnm:0.1, dgnm:0.0, dhnm:0.0},
+                {n:12, m:0, gnm:-0.9, hnm:0.0, dgnm:0.0, dhnm:0.0},
+                {n:12, m:1, gnm:0.3, hnm:-0.3, dgnm:0.0, dhnm:0.0},
+                {n:12, m:2, gnm:0.4, hnm:-0.4, dgnm:0.0, dhnm:0.0},
+                {n:12, m:3, gnm:0.1, hnm:0.8, dgnm:0.0, dhnm:0.0},
+                {n:12, m:4, gnm:-0.5, hnm:-0.8, dgnm:0.0, dhnm:0.0},
+                {n:12, m:5, gnm:0.4, hnm:0.4, dgnm:0.0, dhnm:0.0},
+                {n:12, m:6, gnm:1.3, hnm:-0.2, dgnm:0.0, dhnm:0.0},
+                {n:12, m:7, gnm:-0.4, hnm:-0.9, dgnm:0.0, dhnm:0.0},
+                {n:12, m:8, gnm:0.7, hnm:0.3, dgnm:0.0, dhnm:0.0},
+                {n:12, m:9, gnm:0.4, hnm:0.1, dgnm:0.0, dhnm:0.0},
+                {n:12, m:10, gnm:-0.4, hnm:-0.1, dgnm:0.0, dhnm:0.0},
+                {n:12, m:11, gnm:0.0, hnm:0.8, dgnm:0.0, dhnm:0.0},
+                {n:12, m:12, gnm:-0.2, hnm:-0.5, dgnm:0.0, dhnm:0.0}
             ];
             
             const a = 6371.2; // Earth radius in km
@@ -969,7 +1050,7 @@
             const cosPhi = Math.cos(phi);
             
             // Compute associated Legendre polynomials P(n,m) and their derivatives
-            const maxN = 3;
+            const maxN = 12;
             const P = Array(maxN + 1).fill(0).map(() => Array(maxN + 1).fill(0));
             const dP = Array(maxN + 1).fill(0).map(() => Array(maxN + 1).fill(0));
             
